@@ -6,6 +6,10 @@ console.log("[Next] build mode", mode);
 const disableChunk = !!process.env.DISABLE_CHUNK || mode === "export";
 console.log("[Next] build with chunk: ", !disableChunk);
 
+const isExportStatus = mode === "export" && process.env.BUILD_STATIC;
+const assetPrefix = isExportStatus ? "/chat/" : "";
+const basePath = isExportStatus ? "/chat" : "";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack(config) {
@@ -33,6 +37,8 @@ const nextConfig = {
   experimental: {
     forceSwcTransforms: true,
   },
+  assetPrefix: assetPrefix,
+  basePath: basePath,
 };
 
 const CorsHeaders = [

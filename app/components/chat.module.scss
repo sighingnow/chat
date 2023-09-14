@@ -285,7 +285,8 @@
 }
 
 .chat-message-header {
-  margin-top: 20px;
+  margin-top: 0px;
+  height: 0px;
   display: flex;
   align-items: center;
 
@@ -297,7 +298,7 @@
     justify-content: space-between;
     transition: all ease 0.3s;
     transform: scale(0.9) translateY(5px);
-    margin: 0 10px;
+    margin: 0 0 12px;
     opacity: 0;
     pointer-events: none;
 

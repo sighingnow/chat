@@ -43,11 +43,15 @@ export class ChatGPTApi implements LLMApi {
 
     let baseUrl = isAzure ? accessStore.azureUrl : accessStore.openaiUrl;
 
+    if (baseUrl.includes("openai.azure.com")) {
+      // ignore requests like usage, dashboard to azure.
+      baseUrl = "";
+    }
+
     if (baseUrl.length === 0) {
       const isApp = !!getClientConfig()?.isApp;
       baseUrl = isApp ? DEFAULT_API_HOST : ApiPath.OpenAI;
     }
-
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.slice(0, baseUrl.length - 1);
     }
@@ -60,6 +64,35 @@ export class ChatGPTApi implements LLMApi {
     }
 
     return [baseUrl, path].join("/");
+  }
+
+  chatPath(
+    path: { ChatPath: string; AzureChatPath: string },
+    model: string,
+  ): string {
+    let openaiUrl = useAccessStore.getState().openaiUrl;
+    const apiPath = "/api/openai";
+    const azureApiVersion = "2023-08-01-preview";
+    const azureApiPath = `/openai/deployments/${model.replace(".", "")}/${
+      path.AzureChatPath
+    }?api-version=${azureApiVersion}`;
+
+    if (openaiUrl.length === 0) {
+      // const isApp = !!getClientConfig()?.isApp;
+      // openaiUrl = isApp ? DEFAULT_API_HOST : apiPath;
+      openaiUrl = "https://api.openai.com" + apiPath;
+    }
+    if (openaiUrl.endsWith("/")) {
+      openaiUrl = openaiUrl.slice(0, openaiUrl.length - 1);
+    }
+    if (!openaiUrl.startsWith("http") && !openaiUrl.startsWith(apiPath)) {
+      openaiUrl = "https://" + openaiUrl;
+    }
+    if (openaiUrl.includes("openai.azure.com")) {
+      return openaiUrl + azureApiPath;
+    } else {
+      return [openaiUrl, path.ChatPath].join("/");
+    }
   }
 
   extractMessage(res: any) {
@@ -99,7 +132,7 @@ export class ChatGPTApi implements LLMApi {
     options.onController?.(controller);
 
     try {
-      const chatPath = this.path(OpenaiPath.ChatPath);
+      const chatPath = this.chatPath(OpenaiPath, modelConfig.model);
       const chatPayload = {
         method: "POST",
         body: JSON.stringify(requestPayload),

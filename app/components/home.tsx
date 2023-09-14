@@ -55,6 +55,28 @@ const MaskPage = dynamic(async () => (await import("./mask")).MaskPage, {
   loading: () => <Loading noLogo />,
 });
 
+export function useFavicon() {
+  useEffect(() => {
+    const faviconEl = document.createElement("link");
+    faviconEl.rel = "icon";
+    faviconEl.type = "image/ico";
+    faviconEl.href = "./favicon.ico";
+    document.head.appendChild(faviconEl);
+
+    const favicon16x16El = document.createElement("link");
+    favicon16x16El.rel = "icon";
+    favicon16x16El.type = "image/png";
+    favicon16x16El.href = "./favicon-16x16.png";
+    document.head.appendChild(favicon16x16El);
+
+    const favicon32x32El = document.createElement("link");
+    favicon32x32El.rel = "icon";
+    favicon32x32El.type = "image/png";
+    favicon32x32El.href = "./favicon-32x32.png";
+    document.head.appendChild(favicon32x32El);
+  }, []);
+}
+
 export function useSwitchTheme() {
   const config = useAppConfig();
 
@@ -179,6 +201,7 @@ export function useLoadData() {
 }
 
 export function Home() {
+  useFavicon();
   useSwitchTheme();
   useLoadData();
   useHtmlLang();

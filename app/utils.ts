@@ -1,6 +1,8 @@
+import { diffWordsWithSpace } from "diff";
 import { useEffect, useState } from "react";
 import { showToast } from "./components/ui-lib";
 import Locale from "./locales";
+import { RequestMessage } from "./client/api";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -69,16 +71,41 @@ export async function downloadAs(text: string, filename: string) {
       "href",
       "data:text/plain;charset=utf-8," + encodeURIComponent(text),
     );
-  element.setAttribute("download", filename);
+    element.setAttribute("download", filename);
 
-  element.style.display = "none";
-  document.body.appendChild(element);
+    element.style.display = "none";
+    document.body.appendChild(element);
 
-  element.click();
+    element.click();
 
-  document.body.removeChild(element);
+    document.body.removeChild(element);
+  }
 }
+
+export function diffMessageWith(
+  from: RequestMessage,
+  to: RequestMessage,
+): string | undefined {
+  if (!!!from || !!!to) {
+    return;
+  }
+  if (to.contentOriginal) {
+    return;
+  }
+  let hunks = diffWordsWithSpace(from.content, to.content);
+  let diffContent = "";
+  for (let hunk of hunks) {
+    if (hunk.added) {
+      diffContent += `<span style="color: green">${hunk.value}</span>`;
+    } else if (hunk.removed) {
+      diffContent += `<span style="color: red"><del>${hunk.value}</del></span>`;
+    } else {
+      diffContent += hunk.value;
+    }
+  }
+  return diffContent;
 }
+
 export function readFromFile() {
   return new Promise<string>((res, rej) => {
     const fileInput = document.createElement("input");

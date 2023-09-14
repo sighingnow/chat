@@ -14,6 +14,7 @@ import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
 import ReturnIcon from "../icons/return.svg";
 import CopyIcon from "../icons/copy.svg";
+import DiffIcon from "../icons/diff.svg";
 import LoadingIcon from "../icons/three-dots.svg";
 import PromptIcon from "../icons/prompt.svg";
 import MaskIcon from "../icons/mask.svg";
@@ -21,6 +22,8 @@ import MaxIcon from "../icons/max.svg";
 import MinIcon from "../icons/min.svg";
 import ResetIcon from "../icons/reload.svg";
 import BreakIcon from "../icons/break.svg";
+import ConversationIcon from "../icons/conversation.svg";
+import ConversationDisabledIcon from "../icons/conversation-disabled.svg";
 import SettingsIcon from "../icons/chat-settings.svg";
 import DeleteIcon from "../icons/clear.svg";
 import PinIcon from "../icons/pin.svg";
@@ -50,6 +53,7 @@ import {
 
 import {
   copyToClipboard,
+  diffMessageWith,
   selectOrCopy,
   autoGrowTextArea,
   useMobileScreen,
@@ -89,6 +93,7 @@ import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
+import { RequestMessage } from "../client/api";
 
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
@@ -432,6 +437,7 @@ export function ChatActions(props: {
   // switch model
   const currentModel = chatStore.currentSession().mask.modelConfig.model;
   const allModels = useAllModels();
+  const withContext = chatStore.currentSession().withContext;
   const models = useMemo(
     () => allModels.filter((m) => m.available),
     [allModels],
@@ -516,6 +522,20 @@ export function ChatActions(props: {
               session.clearContextIndex = session.messages.length;
               session.memoryPrompt = ""; // will clear memory
             }
+          });
+        }}
+      />
+
+      <ChatAction
+        text={
+          withContext
+            ? Locale.Chat.InputActions.DisableContext
+            : Locale.Chat.InputActions.EnableContext
+        }
+        icon={withContext ? <ConversationIcon /> : <ConversationDisabledIcon />}
+        onClick={() => {
+          chatStore.updateCurrentSession((session) => {
+            session.withContext = !session.withContext;
           });
         }}
       />
@@ -797,6 +817,33 @@ function _Chat() {
       (session) =>
         (session.messages = session.messages.filter((m) => m.id !== msgId)),
     );
+  };
+
+  const onDiffMessage = (
+    fromMessage: RequestMessage,
+    toMessage: RequestMessage,
+  ) => {
+    if (
+      !!!fromMessage ||
+      !!!toMessage ||
+      !!!fromMessage.content ||
+      !!!toMessage.content
+    ) {
+      return;
+    }
+
+    chatStore.updateCurrentSession((session) => {
+      if (toMessage.contentOriginal) {
+        toMessage.content = toMessage.contentOriginal;
+        toMessage.contentOriginal = undefined;
+      } else {
+        const diff = diffMessageWith(fromMessage, toMessage);
+        if (diff) {
+          toMessage.contentOriginal = toMessage.content;
+          toMessage.content = diff;
+        }
+      }
+    });
   };
 
   const onDelete = (msgId: string) => {
@@ -1129,6 +1176,7 @@ function _Chat() {
       >
         {messages.map((message, i) => {
           const isUser = message.role === "user";
+          const isAssistant = message.role === "assistant";
           const isContext = i < context.length;
           const showActions =
             i > 0 &&
@@ -1137,6 +1185,8 @@ function _Chat() {
           const showTyping = message.preview || message.streaming;
 
           const shouldShowClearContextDivider = i === clearContextIndex - 1;
+
+          const fromMessage = isAssistant && i > 0 ? messages[i - 1] : null;
 
           return (
             <Fragment key={message.id}>
@@ -1147,7 +1197,7 @@ function _Chat() {
               >
                 <div className={styles["chat-message-container"]}>
                   <div className={styles["chat-message-header"]}>
-                    <div className={styles["chat-message-avatar"]}>
+                    {/* <div className={styles["chat-message-avatar"]}>
                       <div className={styles["chat-message-edit"]}>
                         <IconButton
                           icon={<EditIcon />}
@@ -1184,7 +1234,7 @@ function _Chat() {
                           )}
                         </>
                       )}
-                    </div>
+                    </div> */}
 
                     {showActions && (
                       <div className={styles["chat-message-actions"]}>
@@ -1214,11 +1264,24 @@ function _Chat() {
                                 icon={<PinIcon />}
                                 onClick={() => onPinMessage(message)}
                               />
+
                               <ChatAction
                                 text={Locale.Chat.Actions.Copy}
                                 icon={<CopyIcon />}
                                 onClick={() => copyToClipboard(message.content)}
                               />
+
+                              {fromMessage ? (
+                                <ChatAction
+                                  text={Locale.Chat.Actions.Diff}
+                                  icon={<DiffIcon />}
+                                  onClick={() =>
+                                    onDiffMessage(fromMessage, message)
+                                  }
+                                />
+                              ) : (
+                                <></>
+                              )}
                             </>
                           )}
                         </div>
@@ -1249,11 +1312,11 @@ function _Chat() {
                     />
                   </div>
 
-                  <div className={styles["chat-message-action-date"]}>
+                  {/* <div className={styles["chat-message-action-date"]}>
                     {isContext
                       ? Locale.Chat.IsContext
                       : message.date.toLocaleString()}
-                  </div>
+                  </div> */}
                 </div>
               </div>
               {shouldShowClearContextDivider && <ClearContextDivider />}

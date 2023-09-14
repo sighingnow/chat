@@ -12,6 +12,7 @@ export type ChatModel = ModelType;
 export interface RequestMessage {
   role: MessageRole;
   content: string;
+  contentOriginal: string | undefined;
 }
 
 export interface LLMConfig {
@@ -138,6 +139,11 @@ export function getHeaders() {
 
   const makeBearer = (s: string) => `${isAzure ? "" : "Bearer "}${s.trim()}`;
   const validString = (x: string) => x && x.length > 0;
+
+  let openaiUrl = accessStore.openaiUrl;
+  if (openaiUrl.includes("openai.azure.com")) {
+    headers["api-key"] = apiKey;
+  }
 
   // use user's api key first
   if (validString(apiKey)) {

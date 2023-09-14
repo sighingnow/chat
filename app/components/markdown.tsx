@@ -4,6 +4,7 @@ import RemarkMath from "remark-math";
 import RemarkBreaks from "remark-breaks";
 import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
+import RehypeRaw from "rehype-raw";
 import RehypeHighlight from "rehype-highlight";
 import { useRef, useState, RefObject, useEffect, useMemo } from "react";
 import { copyToClipboard } from "../utils";
@@ -134,6 +135,7 @@ function _MarkDownContent(props: { content: string }) {
             ignoreMissing: true,
           },
         ],
+        RehypeRaw as any,
       ]}
       components={{
         pre: PreCode,

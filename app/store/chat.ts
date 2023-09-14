@@ -32,6 +32,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     date: new Date().toLocaleString(),
     role: "user",
     content: "",
+    contentOriginal: "",
     ...override,
   };
 }
@@ -54,6 +55,7 @@ export interface ChatSession {
   clearContextIndex?: number;
 
   mask: Mask;
+  withContext: boolean;
 }
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic;
@@ -77,6 +79,7 @@ function createEmptySession(): ChatSession {
     lastSummarizeIndex: 0,
 
     mask: createEmptyMask(),
+    withContext: true,
   };
 }
 
@@ -445,7 +448,7 @@ export const useChatStore = createPersistStore(
           ...systemPrompts,
           ...longTermMemoryPrompts,
           ...contextPrompts,
-          ...reversedRecentMessages.reverse(),
+          ...(session.withContext ? reversedRecentMessages.reverse() : []),
         ];
 
         return recentMessages;
@@ -611,6 +614,9 @@ export const useChatStore = createPersistStore(
           newSession.mask.modelConfig.sendMemory = true;
           newSession.mask.modelConfig.historyMessageCount = 4;
           newSession.mask.modelConfig.compressMessageLengthThreshold = 1000;
+          if (oldSession.withContext) {
+            newSession.withContext = true;
+          }
           newState.sessions.push(newSession);
         }
       }
